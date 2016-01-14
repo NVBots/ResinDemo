@@ -2,7 +2,7 @@ import os
 from flask import Flask
 app = Flask(__name__)
 
-MESSAGE = 'Hello World!'
+MESSAGE = 'Hello Docker Boston!'
 if 'MESSAGE' in os.environ:
     MESSAGE = os.environ['MESSAGE']
 

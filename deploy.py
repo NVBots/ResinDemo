@@ -102,7 +102,7 @@ def push(targets, branch_name, force=False):
     return False
 
   # Check that branch_name git branch exists
-  branches = check_output('git branch --list', shell=True).split("\n")
+  branches = call('git branch --list', output=True).split("\n")
   branches = [x.strip('* ') for x in branches if x != '']
   if branch_name not in branches:
     print 'no such local branch'

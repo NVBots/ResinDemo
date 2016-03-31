@@ -140,7 +140,7 @@ def process_commands(args):
   if not os.path.exists(BASE_DIR):
     os.mkdir(BASE_DIR)
   if not os.path.exists(args.file):
-    open(args.file, 'w').close()
+    open(args.file, 'w+').close()
   command = args.command.lower()
   if command not in command_list:
     print 'invalid command. choices are', command_list
@@ -215,7 +215,7 @@ if __name__ == '__main__':
                       "-f",
                       "--file",
                       help="file to load/store target branch list. defaults to .resin_targets",
-                      default='./resin_deploy/resin_targets.conf')
+                      default='./.resin_deploy/resin_targets.conf')
 
   parser.add_argument(
                       "--force",

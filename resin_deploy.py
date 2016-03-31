@@ -8,8 +8,11 @@ from subprocess import call, check_output, Popen, STDOUT, PIPE
 
 command_list = ('list', 'delete', 'push', 'add')
 
-BASE_DIR = './.resin_deploy'
+BASE_DIR = './.deploy'
+TARGET_CONF = os.path.join(BASE_DIR, 'deploy_targets.conf')
 
+# parse conf file and return a dictionary of targets where the keys are 
+# the local branch name and the values are a list of <remote>:<remote_branch> strings
 def parse_file(target_file_path):
   with open(target_file_path, 'r') as target_file:
     targets = {}
@@ -22,6 +25,7 @@ def parse_file(target_file_path):
       targets[branch] = remotes
     return targets
 
+# write dictionary of targets to conf file
 def write_file(target_file_path, targets):
   with open(target_file_path, 'w') as target_file:
     for branch, remotes in targets.iteritems():
@@ -34,6 +38,8 @@ def write_file(target_file_path, targets):
 def print_target(branch, remotes):
   print "{0}{1}".format(branch.ljust(26, ' '), [r.strip() for r in remotes])
 
+# check that each value in a list of strings is an existing git remote
+# returns the name of the first missing remote (if any), or None if all remotes exist
 def find_missing_git_remotes(remotes_to_check):
   git_remotes = check_output('git remote', shell=True).split('\n')
   for remote in remotes_to_check:
@@ -45,7 +51,7 @@ def find_missing_git_remotes(remotes_to_check):
       return remote
   return None
 
-
+# list command: list all targets
 def list(targets):
   if len(targets) < 1:
     print 'No targets exist'
@@ -54,6 +60,7 @@ def list(targets):
   for branch, remotes in targets.iteritems():
       print_target(branch, remotes)
 
+# delete command: delete target associated with <branch_name> local branch
 def delete(targets, branch_name):
   if branch_name not in targets:
     print 'No such deploy target'
@@ -67,15 +74,18 @@ def delete(targets, branch_name):
   del targets[branch_name]
   return targets
 
+# push command: push local branch <branch_name> to all associated remotes
 def push(targets, branch_name, force=False):
   # Check that branch_name target exists in target file
   if branch_name not in targets:
     print 'target does not exist: ', branch_name
     return False
+
   # Check that working tree has not modifications
   if call('git diff --quiet && git diff --cached --quiet', shell=True):
     print 'working tree has modifications'
     return False
+
   # Check that branch_name git branch exists
   branches = check_output('git branch --list', shell=True).split("\n")
   branches = [x.strip('* ') for x in branches if x != '']
@@ -121,6 +131,9 @@ def push(targets, branch_name, force=False):
     t.join()
   return True
 
+# add command: add a target associating local branch 'branch_name' to a list of 'remotes'
+# 'remotes' is a list of <remote>:<remote_branch> strings
+# if the :<remote_branch> is omitted, 'branch_name' will be used for both the local and remote branch
 def add(targets, branch_name, remotes):
   if branch_name in targets:
     print 'target branch already exists. Continuing will overwrite existing target'
@@ -138,14 +151,14 @@ def add(targets, branch_name, remotes):
 def process_commands(args):
   if not os.path.exists(BASE_DIR):
     os.mkdir(BASE_DIR)
-  if not os.path.exists(args.file):
-    open(args.file, 'w+').close()
+  if not os.path.exists(TARGET_CONF):
+    open(TARGET_CONF, 'w+').close()
   command = args.command.lower()
   if command not in command_list:
     print 'invalid command. choices are', command_list
     return False
 
-  targets = parse_file(args.file)
+  targets = parse_file(TARGET_CONF)
   
   if command == 'list':
     list(targets)
@@ -157,7 +170,7 @@ def process_commands(args):
   branch_name = args.branch.lower()
   if command == 'delete':
     targets = delete(targets, branch_name)
-    write_file(args.file, targets)
+    write_file(TARGET_CONF, targets)
     return True
   elif command == 'push':
     push(targets, branch_name, force=args.force)
@@ -168,7 +181,7 @@ def process_commands(args):
     return False
   if command == 'add':
     targets = add(targets, branch_name, remotes)
-    write_file(args.file, targets)
+    write_file(TARGET_CONF, targets)
     return True
   return False
 
@@ -183,13 +196,32 @@ def main(args, loglevel):
 # the program.
 if __name__ == '__main__':
   parser = argparse.ArgumentParser( 
-                                    description = "Does a thing to some stuff.",
-                                    epilog = "As an alternative to the commandline, params can be placed in a file, one per line, and specified on the commandline like '%(prog)s @params.conf'.",
-                                    fromfile_prefix_chars = '@' )
+                                    description = "Tool for managing and pushing local git branches to various git remotes and branches on those remotes",
+                                    epilog = """
+This tool allows users to associate a local branch with a list of git remotes (and branches on those remotes) \
+and quickly push the local branch to all associated remotes.
+
+A target includes a single local branch plus one or more remote:remote_branch values. If the :remote_branch portion is omitted,\
+ the name of the local branch will be used. Targets are identified by the name of the local branch.
+
+The list, add, and delete commands allow users to manage their list of targets
+
+The push command pushes the target's local branch to each of the associated remote:remote_branch values.
+
+The list of targets is stored in a configuration file located at {target_conf}
+
+During a push command, output from the git push call is directed to a file located at {base_dir}/<target>/<remote>.out
+
+If a target includes multiple remotes, the push calls are run simultaneously in separate processes
+                                    """.format( target_conf=TARGET_CONF,
+                                                base_dir=BASE_DIR,
+                                              ),
+                                    fromfile_prefix_chars = '@',
+                                    formatter_class=argparse.RawTextHelpFormatter)
 
   parser.add_argument(
                       "command",
-                      help = "options: add, list, delete, push",
+                      help = """options:\n   list\n   delete <branch>\n   push <branch>\n   add <branch> <remote> [<remote>...]""",
                       metavar = "command")  
   parser.add_argument(
                       "branch",
@@ -201,7 +233,7 @@ if __name__ == '__main__':
                       metavar='remotes',
                       type=str,
                       nargs='*',
-                      help='list of git remotes',
+                      help='list of git remotes in the format <remote_name>:<remote_branch_name>. If the :<remote_branch_name> is omitted, the associated local branch will be used',
                       )
 
   parser.add_argument(
@@ -211,20 +243,9 @@ if __name__ == '__main__':
                       action="store_true")
 
   parser.add_argument(
-                      "-f",
-                      "--file",
-                      help="file to load/store target branch list. defaults to .resin_targets",
-                      default='./.resin_deploy/resin_targets.conf')
-
-  parser.add_argument(
                       "--force",
                       help="force push to remotes",
                       action='store_true',)
-
-  # subparsers = parser.add_subparsers(dest="subparser_add")
-
-  # add_parser = subparsers.add_parser('add')
-
 
 
   args = parser.parse_args()

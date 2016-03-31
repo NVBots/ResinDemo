@@ -4,12 +4,15 @@
 # import modules used here -- sys is a very standard one
 import sys, argparse, logging, os, threading
 
-from subprocess import call, check_output, Popen, STDOUT, PIPE
+# from subprocess import call, check_output, Popen, STDOUT, PIPE
+import subprocess 
 
 command_list = ('list', 'delete', 'push', 'add')
 
 BASE_DIR = './.deploy'
 TARGET_CONF = os.path.join(BASE_DIR, 'deploy_targets.conf')
+
+global verbose
 
 # parse conf file and return a dictionary of targets where the keys are 
 # the local branch name and the values are a list of <remote>:<remote_branch> strings
@@ -19,6 +22,8 @@ def parse_file(target_file_path):
     for line in target_file:
       entries = [x.strip() for x in line.split(' ') if x.strip() != '']
       if len(entries) < 2:
+        if verbose:
+          print 'skipping line in target conf file. Not enough values to unpack: ', entries
         continue
       branch = entries[0]
       remotes = entries[1:]
@@ -35,13 +40,21 @@ def write_file(target_file_path, targets):
         target_file.write(remote)
       target_file.write("\n")
 
+def call(cmd, output=False, *args):
+  if verbose:
+    print 'calling command: ', cmd
+  if output:
+    return subprocess.check_output(cmd, shell=True, *args)
+  else:
+    return subprocess.call(cmd, shell=True, *args)
+
 def print_target(branch, remotes):
   print "{0}{1}".format(branch.ljust(26, ' '), [r.strip() for r in remotes])
 
 # check that each value in a list of strings is an existing git remote
 # returns the name of the first missing remote (if any), or None if all remotes exist
 def find_missing_git_remotes(remotes_to_check):
-  git_remotes = check_output('git remote', shell=True).split('\n')
+  git_remotes =call('git remote', output=True).split('\n')
   for remote in remotes_to_check:
     if ':' in remote:
       remote_name, remote_branch = remote.split(':')
@@ -72,6 +85,8 @@ def delete(targets, branch_name):
     print 'Cancelling...'
     return targets
   del targets[branch_name]
+  if verbose:
+    print branch_name, ' target deleted'
   return targets
 
 # push command: push local branch <branch_name> to all associated remotes
@@ -82,7 +97,7 @@ def push(targets, branch_name, force=False):
     return False
 
   # Check that working tree has not modifications
-  if call('git diff --quiet && git diff --cached --quiet', shell=True):
+  if call('git diff --quiet && git diff --cached --quiet'):
     print 'working tree has modifications'
     return False
 
@@ -95,7 +110,7 @@ def push(targets, branch_name, force=False):
 
   # Checkout branch
   print 'checking out {0} branch'.format(branch_name)
-  if call('git checkout {0} --quiet'.format(branch_name), shell=True):
+  if call('git checkout {0} --quiet'.format(branch_name)):
     print 'failed to checkout branch'
     return False
 
@@ -221,11 +236,11 @@ If a target includes multiple remotes, the push calls are run simultaneously in 
 
   parser.add_argument(
                       "command",
-                      help = """options:\n   list\n   delete <branch>\n   push <branch>\n   add <branch> <remote> [<remote>...]""",
+                      help = """options:\ncommand    required args:\n   list   \n   delete  <branch>\n   push    <branch>\n   add     <branch> <remote> [<remote>...]""",
                       metavar = "command")  
   parser.add_argument(
                       "branch",
-                      help = "target branch",
+                      help = "target (local) branch",
                       metavar = "branch",
                       nargs="?")
 
@@ -249,6 +264,8 @@ If a target includes multiple remotes, the push calls are run simultaneously in 
 
 
   args = parser.parse_args()
+  global verbose
+  verbose = args.verbose
   
   # Setup logging
   if args.verbose:

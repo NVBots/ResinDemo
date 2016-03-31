@@ -84,7 +84,8 @@ def push(targets, branch_name, force=False):
     return False
 
   # Checkout branch
-  if call('git checkout {0}'.format(branch_name), shell=True):
+  print 'checking out {0} branch'.format(branch_name)
+  if call('git checkout {0} --quiet'.format(branch_name), shell=True):
     print 'failed to checkout branch'
     return False
 

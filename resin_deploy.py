@@ -110,7 +110,7 @@ def push(targets, branch_name, force=False):
         p.wait()
     t = threading.Thread(target=push_remote)
     t.start()
-    print 'pushing {0} local branch to {1}:{2}. Logging output to {3}<.out, .err>'.format(branch_name, remote_name, remote_branch, branch_log)
+    print 'pushing {0} local branch to {1}:{2}. Logging output to {3}'.format(branch_name, remote_name, remote_branch, branch_log)
     open_threads.append(t)
 
   for t in open_threads:

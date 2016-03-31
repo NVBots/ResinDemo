@@ -4,6 +4,8 @@
 # import modules used here -- sys is a very standard one
 import sys, argparse, logging, os, re
 
+from subprocess import call
+
 command_list = ('list', 'delete', 'push', 'add')
 
 git_remote_re = re.compile('((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?')
@@ -33,6 +35,7 @@ def print_target(branch, remotes):
   print "{0}{1}".format(branch.ljust(20, ' '), [r.strip() for r in remotes])
 
 
+
 def list(targets):
   if len(targets) < 1:
     print 'No targets exist'
@@ -55,7 +58,14 @@ def delete(targets, branch_name):
   return targets
 
 def push(targets, branch_name):
-  pass
+  # Check that branch_name target exists in target file
+  if branch_name not in targets:
+    print 'target does not exist: ', branch_name
+    return False
+  # Check that working tree has not modifications
+  if call('git diff --quiet && git diff --cached --quiet', shell=True):
+    print 'working tree has modifications'
+    return False
 
 def add(targets, branch_name, remotes):
   if branch_name in targets:

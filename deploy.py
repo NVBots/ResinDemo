@@ -40,13 +40,13 @@ def write_file(target_file_path, targets):
         target_file.write(remote)
       target_file.write("\n")
 
-def call(cmd, output=False, *args):
+def call(cmd, output=False, *args, **kwargs):
   if verbose:
     print 'calling command: ', cmd
   if output:
-    return subprocess.check_output(cmd, shell=True, *args)
+    return subprocess.check_output(cmd, shell=True, *args, **kwargs)
   else:
-    return subprocess.call(cmd, shell=True, *args)
+    return subprocess.call(cmd, shell=True, *args, **kwargs)
 
 def print_target(branch, remotes):
   print "{0}{1}".format(branch.ljust(26, ' '), [r.strip() for r in remotes])

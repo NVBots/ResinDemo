@@ -102,19 +102,17 @@ def push(targets, branch_name, force=False):
     else:
       remote_name = remote
       remote_branch = branch_name
-    branch_log_base = os.path.join(remote_log_dir, remote_name)
-    branch_log_stdout = branch_log_base + '.out'
-    branch_log_stderr = branch_log_base + '.err'
+    branch_log = os.path.join(remote_log_dir, remote_name) + '.out'
     def push_remote():
-      with open(branch_log_stdout, 'w+') as target_log_out, open(branch_log_stderr, 'w+') as target_log_err:
+      with open(branch_log, 'w+') as target_log:
         cmd = 'git push {0} {1}:{2} {3}'.format(remote_name, branch_name, remote_branch, '--force' if force else '')
-        p = Popen(cmd, shell=True, stdout=target_log_out, stderr=target_log_err)
+        p = Popen(cmd, shell=True, stdout=target_log, stderr=target_log)
         # if call(cmd, shell=True):
         #   print 'push failed for remote ', remote
         #   return False
     t = threading.Thread(target=push_remote)
     t.start()
-    print 'pushing {0} local branch to {1}:{2}. Logging output to {3}<.out, .err>'.format(branch_name, remote_name, remote_branch, branch_log_base)
+    print 'pushing {0} local branch to {1}:{2}. Logging output to {3}<.out, .err>'.format(branch_name, remote_name, remote_branch, branch_log)
     open_threads.append(t)
 
   for t in open_threads:

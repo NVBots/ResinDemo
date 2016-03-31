@@ -1,2 +1,4 @@
+.resin_deploy/*/
+.resin_deploy/!resin_targets.conf!
 .idea
 *.pyc

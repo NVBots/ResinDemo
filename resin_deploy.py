@@ -118,7 +118,6 @@ def push(targets, branch_name, force=False):
 
   for t in open_threads:
     t.join()
-  print 'push successful!'
   return True
 
 def add(targets, branch_name, remotes):

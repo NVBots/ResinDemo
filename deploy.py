@@ -134,8 +134,7 @@ def push(targets, branch_name, force=False):
       my_pid = pid
       with open(branch_log, 'w+') as target_log:
         cmd = 'git push {0} {1}:{2} {3}'.format(remote_name, branch_name, remote_branch, '--force' if force else '')
-        p = Popen(cmd, shell=True, stdout=target_log, stderr=target_log)
-        res = p.wait()
+        res = call(cmd, output=False, stdout=target_log, stderr=target_log)
         print 'process {0} finished with exit code {1}'.format(my_pid, res)
     t = threading.Thread(target=push_remote)
     t.start()

@@ -107,9 +107,7 @@ def push(targets, branch_name, force=False):
       with open(branch_log, 'w+') as target_log:
         cmd = 'git push {0} {1}:{2} {3}'.format(remote_name, branch_name, remote_branch, '--force' if force else '')
         p = Popen(cmd, shell=True, stdout=target_log, stderr=target_log)
-        # if call(cmd, shell=True):
-        #   print 'push failed for remote ', remote
-        #   return False
+        p.wait()
     t = threading.Thread(target=push_remote)
     t.start()
     print 'pushing {0} local branch to {1}:{2}. Logging output to {3}<.out, .err>'.format(branch_name, remote_name, remote_branch, branch_log)

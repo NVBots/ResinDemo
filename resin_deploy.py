@@ -4,7 +4,7 @@
 # import modules used here -- sys is a very standard one
 import sys, argparse, logging, os, re
 
-from subprocess import call
+from subprocess import call, check_output
 
 command_list = ('list', 'delete', 'push', 'add')
 
@@ -66,6 +66,8 @@ def push(targets, branch_name):
   if call('git diff --quiet && git diff --cached --quiet', shell=True):
     print 'working tree has modifications'
     return False
+  # Check that branch_name git branch exists
+  branches = check_output('git branch --list', shell=True)
 
 def add(targets, branch_name, remotes):
   if branch_name in targets:

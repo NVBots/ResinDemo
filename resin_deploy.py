@@ -4,7 +4,7 @@
 # import modules used here -- sys is a very standard one
 import sys, argparse, logging, os, threading
 
-from subprocess import call, check_output, Popen, STDOUT
+from subprocess import call, check_output, Popen, STDOUT, PIPE
 
 command_list = ('list', 'delete', 'push', 'add')
 
@@ -108,7 +108,7 @@ def push(targets, branch_name, force=False):
     def push_remote():
       with open(branch_log_stdout, 'w+') as target_log_out, open(branch_log_stderr, 'w+') as target_log_err:
         cmd = 'git push {0} {1}:{2} {3}'.format(remote_name, branch_name, remote_branch, '--force' if force else '')
-        p = Popen(cmd, shell=True, stdout=target_log_out, stderr=target_log_err)
+        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         if call(cmd, shell=True):
           print 'push failed for remote ', remote
           return False

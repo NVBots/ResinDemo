@@ -118,7 +118,7 @@ def push(targets, branch_name, force=False):
    # TODO: should we fetch/pull here?
 
    # push to each remote...
-  remote_log_dir = os.path.join(BASE_DIR, branch_name)
+  remote_log_dir = os.path.join(BASE_DIR, branch_name.replace('/', '-'))
   if not os.path.exists(remote_log_dir):
     os.mkdir(remote_log_dir)
 

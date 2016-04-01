@@ -1,2 +1,4 @@
+.deploy/*/
+.deploy/!deploy_targets.conf!
 .idea
 *.pyc

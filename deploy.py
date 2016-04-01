@@ -139,10 +139,11 @@ def push(targets, branch_name, force=False):
         print 'process {0} finished with exit code {1}'.format(my_pid, res)
     t = threading.Thread(target=push_remote)
     t.start()
+    print 'process {4}: Pushing {0} local branch to {1}:{2}. Logging output to {3}'.format(branch_name, remote_name, remote_branch, branch_log, pid)
     if not multithread:
       t.join()
-    print 'process {4}: Pushing {0} local branch to {1}:{2}. Logging output to {3}'.format(branch_name, remote_name, remote_branch, branch_log, pid)
-    open_threads.append(t)
+    else:
+      open_threads.append(t)
 
   if multithread:
     for t in open_threads:

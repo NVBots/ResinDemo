@@ -13,6 +13,7 @@ BASE_DIR = './.deploy'
 TARGET_CONF = os.path.join(BASE_DIR, 'deploy_targets.conf')
 
 global verbose
+global multithread
 
 # parse conf file and return a dictionary of targets where the keys are 
 # the local branch name and the values are a list of <remote>:<remote_branch> strings
@@ -117,7 +118,7 @@ def push(targets, branch_name, force=False):
    # TODO: should we fetch/pull here?
 
    # push to each remote...
-  remote_log_dir = os.path.join(BASE_DIR, branch_name)
+  remote_log_dir = os.path.join(BASE_DIR, branch_name.replace('/', '-'))
   if not os.path.exists(remote_log_dir):
     os.mkdir(remote_log_dir)
 
@@ -139,10 +140,14 @@ def push(targets, branch_name, force=False):
     t = threading.Thread(target=push_remote)
     t.start()
     print 'process {4}: Pushing {0} local branch to {1}:{2}. Logging output to {3}'.format(branch_name, remote_name, remote_branch, branch_log, pid)
-    open_threads.append(t)
+    if not multithread:
+      t.join()
+    else:
+      open_threads.append(t)
 
-  for t in open_threads:
-    t.join()
+  if multithread:
+    for t in open_threads:
+      t.join()
   return True
 
 # add command: add a target associating local branch 'branch_name' to a list of 'remotes'
@@ -261,10 +266,18 @@ If a target includes multiple remotes, the push calls are run simultaneously in 
                       help="force push to remotes",
                       action='store_true',)
 
+  parser.add_argument(
+                      "-m",
+                      "--multithread",
+                      help="push to all target remotes in concurrent threads",
+                      action='store_true',
+                      )
 
   args = parser.parse_args()
   global verbose
+  global multithread
   verbose = args.verbose
+  multithread = args.multithread
   
   # Setup logging
   if args.verbose:

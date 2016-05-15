@@ -158,8 +158,8 @@ def push(targets, branch_name, multithread=False, force=False):
             remote_branch = branch_name
         branch_log = os.path.join(remote_log_dir, remote_name) + '.out'
 
-        def push_remote(_pid, _remote_name, _branch_name, _remote_branch, _force):
-            with open(branch_log, 'w+') as target_log:
+        def push_remote(_pid, _remote_name, _branch_name, _remote_branch, _force, _branch_log):
+            with open(_branch_log, 'w+') as target_log:
                 cmd = 'git push {0} {1}:{2} {3}'.format(
                     _remote_name, _branch_name, _remote_branch, '--force' if _force else ''
                 )
@@ -168,7 +168,7 @@ def push(targets, branch_name, multithread=False, force=False):
                 results.append(res)
         t = threading.Thread(
             target=push_remote,
-            args=(pid, remote_name, branch_name, remote_branch, force)
+            args=(pid, remote_name, branch_name, remote_branch, force, branch_log)
         )
         t.start()
         logging.info('process {4}: Pushing {0} local branch to {1}:{2}. Logging output to {3}'.format(branch_name, remote_name, remote_branch, branch_log, pid))

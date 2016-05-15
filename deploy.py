@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2016 Forrest Pieper
+
+"""
+Tool for managing and pushing local git branches to various git remotes and branches on those remotes
+"""
+
 import argparse
 import logging
 import os
